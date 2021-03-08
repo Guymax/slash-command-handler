@@ -1,0 +1,3 @@
+this is a readme file...
+
+i will try too update this repo when discord will update the API and slashcommands related things
