@@ -1,3 +1,4 @@
-node_modules/
-temp.js
-slashCommands/guilds/689127742104797250
+/node_modules/
+/temp.js
+/slashCommands/guilds/689127742104797250
+/config.js
