@@ -3,7 +3,7 @@ module.exports.run = async (client, interaction) => {
 };
 
 module.exports.help = {
-  name: "testglobal",
+  name: "test_global",
   description: "test global",
   options: [],
 };
