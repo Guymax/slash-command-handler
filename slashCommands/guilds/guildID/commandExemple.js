@@ -1,14 +1,9 @@
 module.exports.run = async (client, interaction) => {
-  client.sendMessage(
-    interaction,
-    "Cette commande est unique à ce serveur",
-    true
-  );
+  client.sendMessage(interaction, "Hello Guild", true);
 };
 
 module.exports.help = {
-  name: "test_guild",
-  description:
-    "test sur un serveur",
+  name: "guild_test",
+  description: "This is a guild test command",
   options: [],
 };

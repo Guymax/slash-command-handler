@@ -1,9 +1,10 @@
 module.exports.run = async (client, interaction) => {
-  client.sendEphemeralMessage(interaction, "Cette commande est globale");
+  await client.sleep(2000);
+  client.sendMessage(interaction, "Hello Global World !!", true);
 };
 
 module.exports.help = {
-  name: "test_global",
-  description: "test global",
+  name: "global_test", //you can't put a whitespace char in slash Commands names
+  description: "This is a global test Command",
   options: [],
 };
