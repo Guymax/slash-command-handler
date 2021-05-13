@@ -1,8 +1,6 @@
-const { readdirSync, read } = require("fs");
+const { readdirSync } = require("fs");
 const fetch = require("node-fetch");
-const axios = require("axios");
 const chalk = require("chalk");
-const { SSL_OP_EPHEMERAL_RSA } = require("constants");
 const BASE_URL = "https://discord.com/api/v8/applications";
 
 function getGlobalSlashCommands(client) {
@@ -18,16 +16,11 @@ function getGuildSpecificSlashCommands(client, guildId) {
 }
 
 function postGlobalSlashCommand(client, slashCommandData) {
-  console.log(slashCommandData);
   client.api
     .applications(client.user.id)
     .commands.post({ data: slashCommandData })
     .then(() => {
-      console.log(
-        "Commande Slash globale " +
-        chalk.cyan(slashCommandData.name) +
-        " envoyée "
-      );
+      console.log("global Slash Command " + chalk.cyan(slashCommandData.name) + " sent ");
     });
 }
 
@@ -39,10 +32,7 @@ async function postGuildSpecificSlashCommand(client, guild, slashCommandData) {
     .commands.post({ data: slashCommandData })
     .then(() => {
       console.log(
-        "Commande Slash " +
-        chalk.cyan(slashCommandData.name) +
-        " envoyée sur le serveur " +
-        chalk.greenBright(guildData.name)
+        `Slash Command ${chalk.cyan(slashCommandData.name)} sent on guild ${chalk.greenBright(guildData.name)}`
       );
     });
 }
@@ -55,38 +45,32 @@ async function deleteGlobalSlashCommand(client, commandID) {
 }
 
 async function deleteGuildSpecificSlashCommand(client, guildId, commandID) {
-  return await fetch(
-    `${BASE_URL}/${client.user.id}/guilds/${guildId}/commands/${commandID}`,
-    {
-      headers: { Authorization: `Bot ${client.config.TOKEN}` },
-      method: "DELETE",
-    }
-  );
+  return await fetch(`${BASE_URL}/${client.user.id}/guilds/${guildId}/commands/${commandID}`, {
+    headers: { Authorization: `Bot ${client.config.TOKEN}` },
+    method: "DELETE",
+  });
 }
 
 const loadCommands = (client, dir = "./slashCommands/") => {
   readdirSync(dir).forEach((dirs) => {
     if (dirs == "guilds") {
-      // commandes slash spécifique à un serveur
+      // guild specific slash Commands are processed here
       readdirSync(`${dir}${dirs}/`).forEach((guildId) => {
-        if (guildId == "guildID") return;
-        const commands = readdirSync(
-          `${dir}/${dirs}/${guildId}/`
-        ).filter((files) => files.endsWith(".js"));
-        client.guildSpecificCommands.set(guildId, new Map());
-        for (const file of commands) {
-          const getFileName = require(`${dir}${dirs}/${guildId}/${file}`);
-          client.guildSpecificCommands
-            .get(guildId)
-            .set(getFileName.help.name, getFileName);
-          postGuildSpecificSlashCommand(client, guildId, getFileName.help);
+        if (
+          client.guilds.cache.map((g) => g.id).includes(guildId) // test if the guild is in the cache of the bot to prevent errors
+        ) {
+          const commands = readdirSync(`${dir}/${dirs}/${guildId}/`).filter((files) => files.endsWith(".js"));
+          client.guildSpecificCommands.set(guildId, new Map());
+          for (const file of commands) {
+            const getFileName = require(`${dir}${dirs}/${guildId}/${file}`);
+            client.guildSpecificCommands.get(guildId).set(getFileName.help.name, getFileName);
+            postGuildSpecificSlashCommand(client, guildId, getFileName.help);
+          }
         }
       });
     } else {
-      const commands = readdirSync(`${dir}/${dirs}/`).filter((files) =>
-        files.endsWith(".js")
-      );
-      //commande slash globales
+      const commands = readdirSync(`${dir}${dirs}/`).filter((files) => files.endsWith(".js"));
+      //global slash commands are processed here
       for (const file of commands) {
         const getFileName = require(`${dir}${dirs}/${file}`);
         client.globalSlashCommands.set(getFileName.help.name, getFileName);
@@ -98,45 +82,43 @@ const loadCommands = (client, dir = "./slashCommands/") => {
 
 const loadEvents = (client, dir = "./events/") => {
   readdirSync(dir).forEach(() => {
-    const events = readdirSync(`${dir}/`).filter((files) =>
-      files.endsWith(".js")
-    );
+    const events = readdirSync(`${dir}/`).filter((files) => files.endsWith(".js"));
     for (const event of events) {
       const evt = require(`${dir}/${event}`);
       const evtName = event.split(".")[0];
       client.on(evtName, evt.bind(null, client));
-      console.log(`Event chargé : ${evtName}`);
+      console.log(`Event loaded : ${evtName}`);
     }
   });
 };
 
-
-const resetCommands = async client => {
+const resetCommands = async (client) => {
   return await getGlobalSlashCommands(client)
     .then(async (globalCommands) => {
       if (globalCommands.length == 0) return;
       for await (const globalCommand of globalCommands) {
-        console.log(globalCommand);
-        await deleteGlobalSlashCommand(client, globalCommand.id)
+        await deleteGlobalSlashCommand(client, globalCommand.id);
       }
     })
     .then(async () => {
-      const guilds = readdirSync("./slashCommands/guilds/");
-      for await (const guild of guilds) {
-        if (guild == "guildID") return;
-        await getGuildSpecificSlashCommands(client, guild).then(
-          async (guildCommands) => {
-            if (guildCommands.length == 0) return console.log(chalk.yellow(`guild ${guild} didn't have any slash commands actually...`));
+      for await (const guild of client.guilds.cache.array()) {
+        await getGuildSpecificSlashCommands(client, guild.id).then(async (guildCommands) => {
+          if (guildCommands.length == 0)
+            return console.log(chalk.yellow(`guild ${guild.name} didn't have any slash commands actually...`));
 
-            for await (const guildCommand of guildCommands) {
-              console.log(guildCommand.name + " has been deleted")
-              await deleteGuildSpecificSlashCommand(client, guild, guildCommand.id);
-            }
+          for await (const guildCommand of guildCommands) {
+            await deleteGuildSpecificSlashCommand(client, guild, guildCommand.id);
+            console.log(
+              `${chalk.cyanBright(guildCommand.name)} has been deleted of guild ${chalk.greenBright(guild.name)}`
+            );
           }
-        );
+        });
       }
-    }).then(() => { return true })
-}
+    })
+    .then(() => {
+      return true;
+    });
+};
 
 module.exports = {
   loadCommands,
