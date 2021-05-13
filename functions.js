@@ -1,6 +1,5 @@
 const axios = require("axios");
 const { DiscordAPIError } = require("discord.js");
-const fetch = require("node-fetch");
 const BASE_URL = "https://discord.com/api/v8";
 
 module.exports = (client) => {
@@ -27,7 +26,7 @@ module.exports = (client) => {
 
   client.sendResponse = (interaction, type, message = "placeholder", ephemeral = false) => {
     if (type > 5 || type < 1)
-      throw new DiscordAPIError("Ce type d'interaction n'est pas valide");
+      throw new DiscordAPIError("This isn't a valid interaction type");
     let data = typeof message == "string" ? { content: message } : message;
     data.flags = ephemeral ? 64 : null;
     let dataToSend = {
@@ -35,9 +34,6 @@ module.exports = (client) => {
     };
 
     if ([3, 4].includes(type)) dataToSend["data"] = data;
-
-    // console.log(dataToSend);
-    // console.log(interaction);
 
     return axios({
       url: `${BASE_URL}/interactions/${interaction.id}/${interaction.token}/callback`,
