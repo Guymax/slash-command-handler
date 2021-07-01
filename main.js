@@ -1,11 +1,12 @@
-const chalk = require("chalk");
-const Discord = require("discord.js");
+const { Client, Intents, Collection } = require("discord.js");
 const { loadEvents } = require("./loader");
 
-const client = new Discord.Client();
+const client = new Client({ intents: Intents.ALL });
 
 client.config = require("./config");
-["guildSpecificCommands", "globalSlashCommands"].forEach((x) => (client[x] = new Discord.Collection()));
+["guildSpecificCommands", "globalSlashCommands", "buttons", "selectMenus"].forEach(
+  (x) => (client[x] = new Collection())
+);
 
 loadEvents(client);
 require("./functions")(client);

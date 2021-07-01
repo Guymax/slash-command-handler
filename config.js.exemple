@@ -1,3 +1,4 @@
 module.exports = {
   TOKEN: "BOT_token",
+  API_URL : "https://discord.com/api/v9/applications"
 };

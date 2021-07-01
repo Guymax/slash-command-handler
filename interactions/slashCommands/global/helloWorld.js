@@ -1,6 +1,5 @@
 module.exports.run = async (client, interaction) => {
-  await client.sleep(2000);
-  client.sendMessage(interaction, "Hello Global World !!", true);
+  interaction.reply({ content: "prout" });
 };
 
 module.exports.help = {
